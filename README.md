@@ -14,3 +14,9 @@ in C:
 * `hello_world_cpython`, this example was not shown during the presentation,
   but it could be the starting point of creating your own Python modules in
   pure CPython.
+
+## What is all this about?
+
+Here you can check a preview of what was showed on the talk:
+
+![Preview](preview.svg)
