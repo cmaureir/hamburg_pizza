@@ -19,4 +19,4 @@ in C:
 
 Here you can check a preview of what was showed on the talk:
 
-<img src="preview.svg" />
+![Preview](preview.gif)
