@@ -1,0 +1,186 @@
+diff --git a/Objects/clinic/listobject.c.h b/Objects/clinic/listobject.c.h
+index 57f0a48eb0..e482a7880f 100644
+--- a/Objects/clinic/listobject.c.h
++++ b/Objects/clinic/listobject.c.h
+@@ -90,9 +90,27 @@ PyDoc_STRVAR(list_append__doc__,
+ "\n"
+ "Append object to the end of the list.");
+ 
++PyDoc_STRVAR(list_ask__doc__,
++"ask($self, object, /)\n"
++"--\n"
++"\n"
++"Ask the list a question.");
++
++PyDoc_STRVAR(list_play__doc__,
++"play($self, object, /)\n"
++"--\n"
++"\n"
++"Play a specific song *only* if the list like it.");
++
+ #define LIST_APPEND_METHODDEF    \
+     {"append", (PyCFunction)list_append, METH_O, list_append__doc__},
+ 
++#define LIST_ASK_METHODDEF    \
++    {"ask", (PyCFunction)list_ask, METH_O, list_ask__doc__},
++
++#define LIST_PLAY_METHODDEF    \
++    {"play", (PyCFunction)list_play, METH_O, list_play__doc__},
++
+ PyDoc_STRVAR(list_extend__doc__,
+ "extend($self, iterable, /)\n"
+ "--\n"
+diff --git a/Objects/listobject.c b/Objects/listobject.c
+index 645742b801..46784861eb 100644
+--- a/Objects/listobject.c
++++ b/Objects/listobject.c
+@@ -348,6 +348,8 @@ app1(PyListObject *self, PyObject *v)
+ int
+ PyList_Append(PyObject *op, PyObject *newitem)
+ {
++
++
+     if (PyList_Check(op) && (newitem != NULL))
+         return app1((PyListObject *)op, newitem);
+     PyErr_BadInternalCall();
+@@ -854,11 +856,131 @@ static PyObject *
+ list_append(PyListObject *self, PyObject *object)
+ /*[clinic end generated code: output=7c096003a29c0eae input=43a3fe48a7066e91]*/
+ {
++
++    if (PyUnicode_Check(object)) {
++        PyObject* str = PyUnicode_AsUTF8String(object);
++        const char *bytes = PyBytes_AsString(str);
++
++        if (!strcmp(bytes, "how are you?"))
++            printf("Good, but maybe you can use my 'ask' function\n");
++
++        Py_XDECREF(str);
++    }
++
++
+     if (app1(self, object) == 0)
+         Py_RETURN_NONE;
+     return NULL;
+ }
+ 
++/*[clinic input]
++list.ask
++
++     object: object
++     /
++
++Ask the list a question.
++[clinic start generated code]*/
++
++static void slow_print(char *in)
++{
++    char *i;
++    for (i = in; *i != '\0'; i++) {
++        printf("%c", *i);
++        fflush(stdout);
++        if (*i == ',')
++            usleep(400000);
++        else
++            usleep(90000);
++    }
++    printf("\n");
++}
++
++static PyObject *
++list_ask(PyListObject *self, PyObject *object)
++/*[clinic end generated code: output=7c096003a29c0eae input=43a3fe48a7066e91]*/
++{
++    PyObject* str = PyUnicode_AsUTF8String(object);
++    const char *bytes = PyBytes_AsString(str);
++
++    if (!strcmp(bytes, "how are you?"))
++    {
++        slow_print("Good, time to time broken, since I'm the master branch.");
++    }
++    else if (!strcmp(bytes, "are you alive?"))
++    {
++        slow_print("Well,...as long as you execute me.");
++    }
++    else if (!strcmp(bytes, "is this ML?"))
++    {
++        slow_print("You want ML?, look at this\n");
++        printf("|\\---/|\n");
++        printf("| o_o |\n");
++        printf(" \\_^_/\n");
++        slow_print("This is a Washing Machine\n");
++        slow_print("ML enough?\n");
++    }
++    else if (!strcmp(bytes, "can you play a song?"))
++    {
++        slow_print("Nah...there is no 'play' function for lists... *wink*");
++    }
++    else if (!strcmp(bytes, "what is the meaning of life?"))
++    {
++        printf("Traceback (most recent call last):\n");
++        printf("  File \"<stdin>\", line 1, in <module>\n");
++        printf("CannotAnswerError: you cannot handle the answer\n\n");
++        slow_print("bye!");
++        exit(0);
++    }
++    else
++    {
++        slow_print("I have no idea about that...");
++    }
++
++    Py_XDECREF(str);
++
++
++    Py_RETURN_NONE;
++}
++
++/*[clinic input]
++list.ask
++
++     object: object
++     /
++
++Ask the list a question.
++[clinic start generated code]*/
++
++static PyObject *
++list_play(PyListObject *self, PyObject *object)
++/*[clinic end generated code: output=7c096003a29c0eae input=43a3fe48a7066e91]*/
++{
++    PyObject* str = PyUnicode_AsUTF8String(object);
++    const char *bytes = PyBytes_AsString(str);
++
++    if (!strcmp(bytes, "despacito"))
++    {
++        system("mpv /home/cmaureir/d.ogg &> /dev/null");
++    }
++    else if (!strcmp(bytes, "rock"))
++    {
++        slow_print("Nope, did you read the docs?, it's a song, not a Genre");
++    }
++    else if (!strcmp(bytes, "happy"))
++    {
++        slow_print("No please,...not the Minions song");
++    }
++    else
++    {
++        slow_print("Nope....");
++    }
++
++    Py_XDECREF(str);
++
++    Py_RETURN_NONE;
++}
++
+ /*[clinic input]
+ list.extend
+ 
+@@ -2752,6 +2874,8 @@ static PyMethodDef list_methods[] = {
+     LIST_CLEAR_METHODDEF
+     LIST_COPY_METHODDEF
+     LIST_APPEND_METHODDEF
++    LIST_ASK_METHODDEF
++    LIST_PLAY_METHODDEF
+     LIST_INSERT_METHODDEF
+     LIST_EXTEND_METHODDEF
+     LIST_POP_METHODDEF

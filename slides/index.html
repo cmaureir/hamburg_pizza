@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Divo into CPython</title>
+
+  <meta name="description" content="Golfing with Python">
+  <meta name="author" content="Cristian Maureira-Fredes">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <link rel="stylesheet" href="css/reveal.css">
+  <link rel="stylesheet" href="css/theme/mio.css" id="theme">
+
+  <!-- Theme used for syntax highlighting of code -->
+  <link rel="stylesheet" href="lib/css/zenburn.css">
+
+  <!-- Printing and PDF exports -->
+  <script>
+  if( window.location.search.match( /print-pdf/gi ) ) {
+    var link = document.createElement( 'link' );
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = 'css/print/pdf.css';
+    document.getElementsByTagName( 'head' )[0].appendChild( link );
+  }
+  </script>
+
+  <!--[if lt IE 9]>
+  <script src="lib/js/html5shiv.js"></script>
+  <![endif]-->
+</head>
+<!--*****************************************************************************-->
+<body>
+<div class="reveal">
+<div class="slides">
+  <!--***************************************************************************-->
+  <section>
+    <h2><i class="blue-light">A</i><br/>Dive into <i class="yellow">CPython</i></h2>
+    <h3><i class="blue-light">(the hard way)</i></h3>
+    <p style="font-size: 60%;margin-top: 10%;">
+      Dr. <i class="yellow">Cristián</i> Maureira-Fredes<br/>
+      <i class="blue-light">R&amp;D Manager</i> @ TQtC
+            <br/>
+        <p style="font-size: 70%;">
+        <img src="img/twitter.png" style="background: rgba(0,0,0,0);height: 50px; border: 0px;">
+        <img src="img/github_white.png"  style="background: rgba(0,0,0,0);height: 50px; border: 0px;">
+        <img src="img/linkedin.png"  style="background: rgba(0,0,0,0);height: 50px; border: 0px;"><br/>
+        @cmaureir
+        </p>
+    </p>
+  </section>
+
+  <section>
+    <h3>Implementations</h3>
+    <ul>
+        <li class="fragment fade-in" data-fragment-index="1">IronPython - <a href="https://ironpython.net/">ironpython.net</a></li>
+        <li class="fragment fade-in" data-fragment-index="2">Jython - <a href="https://www.jython.org/">jython.org</a></li>
+        <li class="fragment fade-in" data-fragment-index="3">Stackless - <a href="http://www.stackless.com/">stackless.com</a></li>
+        <li class="fragment fade-in" data-fragment-index="4">PyPy - <a href="https://www.pypy.org/">pypy.org</a></li>
+        <li class="fragment fade-in" data-fragment-index="5">MicroPython - <a href="http://www.micropython.org/">micropython.org</a></li>
+        <li class="fragment fade-in" data-fragment-index="6">RustPython - <a href="https://github.com/RustPython/RustPython">rustpython.github.io</a></li>
+        <li class="fragment fade-in" data-fragment-index="7"><i class="yellow-light">CPython</i> - <a href="https://python.org">python.org</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Not familiar with <i class="yellow">C</i>?</h2>
+    <p>
+        Here you have a crash course
+    </p>
+  </section>
+
+  <section>
+    <pre class="fragment fade-in" data-fragment-index="1" style="font-size: 50%;width: 90%;"><code class="c" data-trim data-noescape>
+        // hello.c
+        #include &lt;stdio.h&gt;
+        int main() {
+        <span class="fragment fade-in" data-fragment-index="2">    int a = 10;
+            float total = 0.0;
+            char *b = "hello";
+        </span><span class="fragment fade-in" data-fragment-index="3">
+            for (int i = 0; i < a; i++) {
+                total += i*0.5;
+            }
+        </span><span class="fragment fade-in" data-fragment-index="4">
+            printf("The total is: %.2f\n", total);
+            printf("The word is is: %s\n", b);
+        </span>
+            return 0;
+        }
+        </code></pre>
+        <pre class="fragment fade-in" data-fragment-index="5" style="font-size: 50%;width: 90%;"><code class="bash" data-trim data-noescape>
+        $ gcc hello.c
+        $ ./a.out
+        The total is: 22.50
+        The word is is: hello
+        </code></pre>
+  </section>
+
+  <section>
+    <h3>We are ready to <i class="green">hack</i> CPython</h3>
+    <img style="width: 40%;" src="img/hack.gif" />
+  </section>
+
+  <section>
+    <pre style="font-size: 50%;width: 90%;"><code class="python" data-trim data-noescape>
+    # hack.py
+
+    def f():
+        a = 2
+        b = 40
+        return a + b
+
+    print(f"Hello World, here is the answer: {f()}")
+    </code></pre>
+
+    <pre class="fragment fade-in" data-fragment-index="1" style="font-size: 50%;width: 90%;"><code class="bash" data-trim data-noescape>
+    $ gdb --args python hack.py
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>How Python <i class="yellow-light">understand</i> our code?</h3>
+  </section>
+
+  <section>
+    <h3 style="font-size: 95%;">The whole process</h3>
+    <ul style="font-size: 120%;">
+        <li><i class="yellow-light">D</i><span class="fragment fade-in" data-fragment-index="1">ecoding</span><span class="fragment fade-in" data-fragment-index="2"> - <i class="blue-light">Bytes to text</i></span></li>
+        <li><i class="yellow-light">T</i><span class="fragment fade-in" data-fragment-index="3">okenizing</span><span class="fragment fade-in" data-fragment-index="4"> - <i class="blue-light">Text to words</i></span></li>
+        <li><i class="yellow-light">P</i><span class="fragment fade-in" data-fragment-index="5">arsing</span><span class="fragment fade-in" data-fragment-index="6"> - <i class="blue-light">Words to Semantics</i></span></li>
+        <li><i class="yellow-light">A</i><span class="fragment fade-in" data-fragment-index="7">ST</span><span class="fragment fade-in" data-fragment-index="8"> - <i class="blue-light">Semantics structure</i></span></li>
+        <li><i class="yellow-light">C</i><span class="fragment fade-in" data-fragment-index="9">ompiling</span><span class="fragment fade-in" data-fragment-index="10"> - <i class="blue-light">Bytecode to VM</i></span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h3><i class="yellow-light">C</i>ompiling</h3>
+    <div id="left">
+        <ul style="font-size: 80%;" class="fragment fade-in" data-fragment-index="1">
+            <li>Depends on the CPython VM</li>
+            <li>Stack based</li>
+        </ul>
+        <pre class="fragment fade-in" data-fragment-index="2" style="font-size: 50%;width: 90%;"><code class="python" data-trim data-noescape>
+        def f():
+            a = 2
+            b = 40
+            return a + b
+        from dis import dis
+        dis(f)
+        </code></pre>
+    </div>
+    <div id="right">
+        <pre class="fragment fade-in" data-fragment-index="3" style="font-size: 50%;width: 90%;"><code class="bash" data-trim data-noescape>
+  2     0 LOAD_CONST        1 (2)
+        2 STORE_FAST        0 (a)
+
+  3     4 LOAD_CONST        2 (40)
+        6 STORE_FAST        1 (b)
+
+  4     8 LOAD_FAST         0 (a)
+       10 LOAD_FAST         1 (b)
+       12 BINARY_ADD
+       14 RETURN_VALUE
+        </code></pre>
+    </div>
+    <div style="position: absolute; margin-top: 30%;">
+    <p class="fragment fade-in" data-fragment-index="3" style="text-align: center;">
+        <a href="https://docs.python.org/3.8/library/dis.html">docs.python.org/3.8/library/dis.html</a>
+    </p>
+    </div>
+  </section>
+
+  <section>
+    <h3>That was the <i class="yellow-light">easy</i> part</h3>
+    let's jump into <i class="green">the code</i><br/>
+    <img width="30%;" src="img/suspense.gif" />
+  </section>
+  <section>
+    <h3>So where <i class="yellow-light">are</i> the mechanics?</h3>
+    <pre class="fragment fade-in" data-fragment-index="1" style="font-size: 50%;width: 80%;"><code class="bash" data-trim data-noescape>
+    Python/ceval.c:745 _PyEval_EvalFrameDefault
+    </code></pre>
+    <p class="fragment fade-in" data-fragment-index="1" style="text-align: center;">
+    The <i class="blue-light">main_loop</i>
+    </p>
+  </section>
+
+  <section>
+    <h3>PyObject</h3>
+    <pre style="font-size: 50%;width: 80%;"><code class="c" data-trim data-noescape>
+ /* Nothing is actually declared to be a PyObject,
+  * but every pointer to a Python object can be cast
+  * to a PyObject*.  This is inheritance buil by hand.
+  * Similarly every pointer to a variable-size Python
+  * object can, in addition, be cast to PyVarObject*.
+ */
+typedef struct _object {
+    _PyObject_HEAD_EXTRA
+    Py_ssize_t ob_refcnt;
+    struct _typeobject *ob_type;
+} PyObject;
+    </code></pre>
+  </section>
+
+
+<section>
+    <div id="left">
+    <pre style="font-size: 20%;width: 90%;"><code class="c" data-trim data-noescape>
+typedef struct _typeobject {
+    PyObject_VAR_HEAD
+    const char *tp_name; /* For printing, in format "<module>.<name>" */
+    Py_ssize_t tp_basicsize, tp_itemsize; /* For allocation */
+
+    /* Methods to implement standard operations */
+
+    destructor tp_dealloc;
+    Py_ssize_t tp_vectorcall_offset;
+    getattrfunc tp_getattr;
+    setattrfunc tp_setattr;
+    PyAsyncMethods *tp_as_async; /* formerly known as tp_compare (Python 2)
+                                    or tp_reserved (Python 3) */
+    reprfunc tp_repr;
+
+    /* Method suites for standard classes */
+
+    PyNumberMethods *tp_as_number;
+    PySequenceMethods *tp_as_sequence;
+    PyMappingMethods *tp_as_mapping;
+
+    /* More standard operations (here for binary compatibility) */
+
+    hashfunc tp_hash;
+    ternaryfunc tp_call;
+    reprfunc tp_str;
+    getattrofunc tp_getattro;
+    setattrofunc tp_setattro;
+
+    /* Functions to access object as input/output buffer */
+    PyBufferProcs *tp_as_buffer;
+
+    /* Flags to define presence of optional/expanded features */
+    unsigned long tp_flags;
+
+    const char *tp_doc; /* Documentation string */
+
+    /* Assigned meaning in release 2.0 */
+    /* call function for all accessible objects */
+    traverseproc tp_traverse;
+
+    /* delete references to contained objects */
+    inquiry tp_clear;
+
+    /* Assigned meaning in release 2.1 */
+    /* rich comparisons */
+    richcmpfunc tp_richcompare;
+
+    /* weak reference enabler */
+    Py_ssize_t tp_weaklistoffset;
+
+    /* Iterators */
+    getiterfunc tp_iter;
+    iternextfunc tp_iternext;
+
+    </code></pre>
+    </div>
+    <div id="right">
+    <pre style="font-size: 20%;width: 90%;"><code class="c" data-trim data-noescape>
+    /* Attribute descriptor and subclassing stuff */
+    struct PyMethodDef *tp_methods;
+    struct PyMemberDef *tp_members;
+    struct PyGetSetDef *tp_getset;
+    struct _typeobject *tp_base;
+    PyObject *tp_dict;
+    descrgetfunc tp_descr_get;
+    descrsetfunc tp_descr_set;
+    Py_ssize_t tp_dictoffset;
+    initproc tp_init;
+    allocfunc tp_alloc;
+    newfunc tp_new;
+    freefunc tp_free; /* Low-level free-memory routine */
+    inquiry tp_is_gc; /* For PyObject_IS_GC */
+    PyObject *tp_bases;
+    PyObject *tp_mro; /* method resolution order */
+    PyObject *tp_cache;
+    PyObject *tp_subclasses;
+    PyObject *tp_weaklist;
+    destructor tp_del;
+
+    /* Type attribute cache version tag. Added in version 2.6 */
+    unsigned int tp_version_tag;
+
+    destructor tp_finalize;
+    vectorcallfunc tp_vectorcall;
+
+    /* bpo-37250: kept for backwards compatibility in CPython 3.8 only */
+    Py_DEPRECATED(3.8) int (*tp_print)(PyObject *, FILE *, int);
+
+#ifdef COUNT_ALLOCS
+    /* these must be last and never explicitly initialized */
+    Py_ssize_t tp_allocs;
+    Py_ssize_t tp_frees;
+    Py_ssize_t tp_maxalloc;
+    struct _typeobject *tp_prev;
+    struct _typeobject *tp_next;
+#endif
+} PyTypeObject;
+
+/* The *real* layout of a type object when allocated on the heap */
+typedef struct _heaptypeobject {
+    /* Note: there's a dependency on the order of these members
+       in slotptr() in typeobject.c . */
+    PyTypeObject ht_type;
+    PyAsyncMethods as_async;
+    PyNumberMethods as_number;
+    PyMappingMethods as_mapping;
+    PySequenceMethods as_sequence; /* as_sequence comes after as_mapping,
+                                      so that the mapping wins when both
+                                      the mapping and the sequence define
+                                      a given operator (e.g. __getitem__).
+                                      see add_operators() in typeobject.c . */
+    PyBufferProcs as_buffer;
+    PyObject *ht_name, *ht_slots, *ht_qualname;
+    struct _dictkeysobject *ht_cached_keys;
+    /* here are optional user slots, followed by the members. */
+} PyHeapTypeObject;
+    </code></pre>
+    </div>
+</section>
+
+  <section>
+    <img width="60%;" src="img/jump.gif" />
+  </section>
+
+
+  <section
+    <h3>You <i class="red">don't</i> need to learn them all</h3>
+  </section>
+
+
+  <section>
+    <h3>Global Interpreter Lock (GIL)</h3>
+    <p class="fragment fade-in" data-fragment-index="1" style="text-align: center;">
+        Python 2
+    </p>
+    <pre class="fragment fade-in" data-fragment-index="1"  style="font-size: 70%;width: 90%;"><code class="c" data-trim data-noescape>
+    /* This is the GIL */
+    static PyThread_type_lock interpreter_lock = 0;
+    </code></pre>
+
+    <p class="fragment fade-in" data-fragment-index="2" style="text-align: center;">
+        Python 3
+    </p>
+    <pre  class="fragment fade-in" data-fragment-index="2" style="font-size: 70%;width: 90%;"><code class="c" data-trim data-noescape>
+    /* Request for dropping the GIL */
+    _Py_atomic_int gil_drop_request;
+    struct _pending_calls pending;
+    struct _gil_runtime_state gil;
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>Reference counting</h3>
+    <pre  class="fragment fade-in" data-fragment-index="1"style="font-size: 70%;width: 90%;"><code class="python" data-trim data-noescape>
+    <span class="fragment fade-in" data-fragment-index="2">>>> import sys</span>
+    <span class="fragment fade-in" data-fragment-index="3">>>> a = [1,2,3]</span>
+    <span class="fragment fade-in" data-fragment-index="4">>>> b = a</span>
+    <span class="fragment fade-in" data-fragment-index="5">>>> sys.getrefcount(a)</span>
+    <span class="fragment fade-in" data-fragment-index="6">3</span>
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>Let's look at some code</h3>
+  </section>
+
+  <section>
+    <h3>The next steps</h3>
+    <pre class="fragment fade-in" data-fragment-index="1"style="font-size: 40%;width: 90%;"><code class="bash" data-trim data-noescape>
+    Doc/      Mac/      PC/        aclocal.m4          configure.ac     README.rst
+    Grammar/  Misc/     PCbuild/   CODE_OF_CONDUCT.md  install-sh*      setup.py
+    Include/  Modules/  Programs/  config.guess*       LICENSE
+    Lib/      Objects/  Python/    config.sub*         Makefile.pre.in
+    m4/       Parser/   Tools/     configure*          pyconfig.h.in
+    </code></pre>
+    <ul>
+        <li class="fragment fade-in" data-fragment-index="2"><i class="blue-light">Doc</i> - Official documentation</li>
+        <li class="fragment fade-in" data-fragment-index="3"><i class="blue-light">Include</i> - Interpreter header files</li>
+        <li class="fragment fade-in" data-fragment-index="4"><i class="blue-light">Lib</i> - stdlib in pure Python</li>
+        <li class="fragment fade-in" data-fragment-index="5"><i class="blue-light">Modules</i> - stdlib in C</li>
+        <li class="fragment fade-in" data-fragment-index="6"><i class="blue-light">Objects</i> - built-in types</li>
+        <li class="fragment fade-in" data-fragment-index="7"><i class="blue-light">Python</i> - CPython runtime</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>Homework</h3>
+    Get <i class="yellow-light">inspired</i> by watching talks by:<br/>
+    <ul class="fragment fade-in" data-fragment-index="1">
+        <li>Brett Cannon</li>
+        <li>David Beazley</li>
+        <li>Larry Hastings</li>
+        <li>James Powell</li>
+        <li>...and many more!</li>
+    </ul>
+  </section>
+
+
+  <section>
+    <div id="left30">
+    <p style="font-size: 450%;text-align: center;">
+    Q<i class="yellow">&amp;</i>A<br/>
+    </p>
+    </div>
+    <div id="right70">
+        <p style="margin-right: 10%; font-size: 90%;">
+            <br/>
+            <a href="https://maureira.xyz">maureira.xyz</a><br/>
+           @cmaureir<br/>
+        <img src="img/twitter.png" style="background: rgba(0,0,0,0);height: 50px; border: 0px;">
+        <img src="img/github_white.png"  style="background: rgba(0,0,0,0);height: 50px; border: 0px;">
+        <img src="img/linkedin.png"  style="background: rgba(0,0,0,0);height: 50px; border: 0px;"><br/>
+        </p>
+    </div>
+  </section>
+</div>
+</div>
+<!--*****************************************************************************-->
+  <script src="lib/js/head.min.js"></script>
+  <script src="js/reveal.js"></script>
+  <script>
+    // More info https://github.com/hakimel/reveal.js#configuration
+    Reveal.initialize({
+      controls: true,
+      progress: true,
+      history: true,
+      center: true,
+      transition: 'none', // none/fade/slide/convex/concave/zoom
+      // More info https://github.com/hakimel/reveal.js#dependencies
+      dependencies: [
+        { src: 'lib/js/classList.js', condition: function() {
+            return !document.body.classList;
+            }
+        },
+        { src: 'plugin/markdown/marked.js', condition: function() {
+            return !!document.querySelector( '[data-markdown]' );
+            }
+        },
+        { src: 'plugin/markdown/markdown.js', condition: function() {
+            return !!document.querySelector( '[data-markdown]' );
+            }
+        },
+        { src: 'plugin/highlight/highlight.js', async: true, callback: function() {
+            hljs.initHighlightingOnLoad();
+            }
+        },
+        { src: 'plugin/search/search.js', async: true },
+        { src: 'plugin/math/math.js', async: true },
+        { src: 'plugin/zoom-js/zoom.js', async: true },
+        { src: 'plugin/notes/notes.js', async: true }
+      ]
+    });
+  </script>
+<!--*****************************************************************************-->
+  <style type="text/css">
+  /* 1. Style header/footer <div> so they are positioned as desired. */
+  #header-left {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+  }
+  #header-right {
+    position: absolute;
+    top: 0%;
+    right: 0%;
+  }
+  #footer-left {
+    position: absolute;
+    bottom: 0%;
+    left: 0%;
+  }
+
+  /* Slide division */
+  #left {
+    left:-8.33%;
+    text-align: left;
+    float: left;
+    width:50%;
+    z-index:-10;
+  }
+
+  #right {
+    left:31.25%;
+    top: 75px;
+    float: right;
+    text-align: right;
+    z-index:-10;
+    width:50%;
+  }
+
+  #rightl {
+    left:31.25%;
+    top: 75px;
+    float: right;
+    text-align: left;
+    z-index:-10;
+    width:50%;
+  }
+
+  #left70 {
+    left:-8.33%;
+    text-align: left;
+    float: left;
+    width:66%;
+    z-index:-10;
+    margin-left: 2%;
+    margin-right: 2%;
+  }
+
+  #right70 {
+    left:-8.33%;
+    text-align: right;
+    float: right;
+    width:66%;
+    z-index:-10;
+    margin-left: 2%;
+    margin-right: 2%;
+  }
+  #right70l {
+    left:-8.33%;
+    text-align: left;
+    float: right;
+    width:66%;
+    z-index:-10;
+    margin-left: 2%;
+    margin-right: 2%;
+  }
+  #left30 {
+    left:31.25%;
+    top: 75px;
+    float: left;
+    text-align: left;
+    z-index:-10;
+    width:26%;
+    margin-left: 2%;
+    margin-right: 2%;
+  }
+
+  #right30 {
+    left:31.25%;
+    top: 75px;
+    float: right;
+    text-align: right;
+    z-index:-10;
+    width:26%;
+    margin-left: 2%;
+    margin-right: 2%;
+  }
+  /* styles */
+  .green {
+    color: #41cd52;
+    font-style: normal;
+  }
+
+  .green-dark {
+    color: #17a81a;
+    font-style: normal;
+  }
+
+  .gray {
+    color: #646464;
+    font-style: normal;
+  }
+  .blue {
+    color: #306998;
+    font-style: normal;
+  }
+  .blue-light {
+    color: #4B8BBE;
+    font-style: normal;
+  }
+  .yellow {
+    color: #FFD43B;
+    font-style: normal;
+  }
+  .yellow-light {
+    color: #FFE873;
+    font-style: normal;
+  }
+
+  .white {
+    color: #ffffff;
+    font-style: normal;
+  }
+
+  .red {
+    color: #ff6961;
+    font-style: normal;
+  }
+  </style>
+
+  <!-- 2. Create hidden header/footer <div> -->
+  <div id="hidden" style="display:none;">
+    <div id="header">
+      <div id="header-left"></div>
+      <div id="header-right"></div>
+      <div id="footer-left"><p style="font-size: 18pt;margin-left: 20px;">Python Pizza Hamburg 2019 | <i class="yellow">@cmaureir</i></p></div>
+    </div>
+  </div>
+
+  <script src="js/jquery-2.2.4.min.js"></script>
+  <script type="text/javascript">
+    // 3. On Reveal.js ready event, copy header/footer <div> into each `.slide-background` <div>
+    var header = $('#header').html();
+    if ( window.location.search.match( /print-pdf/gi ) ) {
+      Reveal.addEventListener( 'ready', function( event ) {
+        $('.slide-background').append(header);
+      });
+    }
+    else {
+      $('div.reveal').append(header);
+     }
+  </script>
+<!--*****************************************************************************-->
+</body>
+</html>
